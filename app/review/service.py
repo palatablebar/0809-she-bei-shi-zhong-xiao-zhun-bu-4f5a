@@ -52,3 +52,33 @@ def review(store, run_id, values):
     if status == "APPROVED" and not current["report"]["balance"]["releasable"]:
         raise DomainIssue("UNRESOLVED_ISSUES")
     return store.revise(run_id, revision, status, note.strip(), now())
+
+
+def pin(run, group):
+    """固定签发时刻的组证据：来源清单、核对账和业务计算快照。"""
+    report = run["report"]
+    case = next(item for item in report["cases"] if item["case"] == group["case"])
+    return dict(
+        schema="group-evidence/1",
+        run_id=run["id"],
+        case=group["case"],
+        manifest=report["manifest"],
+        status=group["status"],
+        prep=case.get("prep"),
+        measure=case.get("measure"),
+        delta=case.get("delta"),
+        ledger=group["ledger"],
+        records=group["records"],
+    )
+
+
+def issue(store, run_id, case):
+    current = store.load(run_id)
+    group = next((item for item in current["groups"] if item["case"] == case), None)
+    if group is None:
+        raise DomainIssue("GROUP_NOT_FOUND")
+    if group["state"] == "ISSUED":
+        raise DomainIssue("GROUP_FINALIZED")
+    if not group["issuable"]:
+        raise DomainIssue("GROUP_BLOCKED")
+    return store.issue(run_id, case, pin(current, group), now())

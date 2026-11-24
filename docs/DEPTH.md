@@ -13,6 +13,7 @@
 | M5 运行对账 | 对照输入、采信和隔离行 | `POST /api/stages/balance` | `app/modules/reconcile.py` | `tests/test_reconcile.py` |
 | M6 批次复核 | 执行批次并签发或暂缓 | `POST /api/runs、PATCH /api/runs/<id>` | `app/review/service.py` | `tests/test_review.py` |
 | M7 证据交付 | 下载复核清单 | `GET /api/runs/<id>/evidence` | `app/evidence/render.py` | `tests/test_evidence.py` |
+| M8 按组签发 | 按设备组核对并独立签发 | `POST /api/runs/<id>/groups/<case>/issue` | `app/modules/reconcile.py`、`app/review/service.py` | `tests/test_issuance.py` |
 
 ## 输入陷阱
 
@@ -35,3 +36,11 @@
 设备 tick 与参考毫秒必须同时递增。使用位于样本两侧的同步点，允许命中同步端点。插值以有理数计算，半毫秒进位。
 
 逐组预期结论见 `tests/test_policy.py`，计算过程证据见 `tests/test_calculate.py`。
+
+## 按组签发
+
+- 每组核对输入、采信、隔离与被拒记录：隔离行按 `case` 归属设备组，冲突与回放计入隔离，格式坏行计入被拒。
+- 组判定为 READY 且名下无隔离、被拒记录时可独立签发；签发即固定该组证据（来源清单、核对账与计算快照），此后不再改写。
+- 问题组只挡住自身，签发结果列出涉及的记录键。
+- 隔离行无法归属任何设备组时列入 `orphans`，其余各组均不能视为已完整核对，整批不可按组签发。
+- 同一来源重跑复用原批次，不新增组结果；补录形成新批次，不改写已签发组的原计算；提交失败回滚，保留原批次与全部记录。

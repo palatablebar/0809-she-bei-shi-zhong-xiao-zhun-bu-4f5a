@@ -26,7 +26,12 @@ function announce(text, failure = false) {
 
 function draw() {
   if (!report) return;
-  snapshot(report, selected, stage);
+  const issuance = {
+    groups: batch ? batch.groups || [] : report.groups || [],
+    orphans: batch ? batch.orphans || [] : report.orphans || [],
+    committed: !!batch,
+  };
+  snapshot(report, selected, stage, issuance);
   visualize(report, selected);
   for (const button of stages) button.setAttribute('aria-pressed',String(button.dataset.stage===stage));
   document.querySelector('#panel-title').textContent = stages.find(button => button.dataset.stage===stage)?.textContent || '运行对账';
@@ -85,6 +90,11 @@ const filename = document.querySelector('#file-name');
 profile.addEventListener('change',()=>{file.value=''; filename.textContent=''; preview(stage);});
 file.addEventListener('change',()=>{filename.textContent=file.files[0]?.name || ''; preview(stage);});
 document.querySelector('#rows').addEventListener('click',event=>{
+  const issuing = event.target.closest('[data-issue]');
+  if (issuing && batch) return perform(async()=>{
+    const result = await request(`/api/runs/${batch.id}/groups/${encodeURIComponent(issuing.dataset.issue)}/issue`,{method:'POST'});
+    show(result,true); announce(`分组 ${issuing.dataset.issue} 已签发，证据已固定`); await refresh();
+  });
   const button = event.target.closest('[data-case]');
   if (button) { selected = button.dataset.case; draw(); document.querySelector(`[data-case="${CSS.escape(selected)}"]`).focus(); }
 });

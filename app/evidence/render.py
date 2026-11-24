@@ -8,6 +8,8 @@ def artifact(run):
         "balance": run["report"]["balance"],
         "cases": run["report"]["cases"],
         "intake": run["report"]["intake"],
+        "groups": run["groups"],
+        "orphans": run["orphans"],
         "review": {key: run[key] for key in ("status", "revision", "note", "reviewed")},
     }
     return (

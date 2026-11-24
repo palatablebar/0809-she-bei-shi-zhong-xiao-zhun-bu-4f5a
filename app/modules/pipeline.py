@@ -4,7 +4,7 @@ from app.modules.calculate import compute
 from app.modules.grouping import case_groups
 from app.modules.policy import policy
 from app.modules.prepare import prepare
-from app.modules.reconcile import balance
+from app.modules.reconcile import balance, ledgers
 
 
 def evaluate(rows, stage):
@@ -33,4 +33,5 @@ def run(data, stage=5):
     output["cases"] = cases
     if stage >= 5:
         output["balance"] = balance(intake, cases)
+        output["groups"], output["orphans"] = ledgers(intake, cases)
     return output
